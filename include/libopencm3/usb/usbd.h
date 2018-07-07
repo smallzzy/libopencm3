@@ -61,6 +61,7 @@ extern const usbd_driver st_usbfs_v2_usb_driver;
 extern const usbd_driver efm32lg_usb_driver;
 extern const usbd_driver efm32hg_usb_driver;
 extern const usbd_driver lm4f_usb_driver;
+extern const usbd_driver samd21_usb_driver;
 
 /* <usb.c> */
 /**
