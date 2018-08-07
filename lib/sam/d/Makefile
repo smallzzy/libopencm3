@@ -36,6 +36,7 @@ TGT_CFLAGS      += $(DEBUG_FLAGS)
 ARFLAGS		= rcs
 OBJS		= gclk.o nvmctrl.o gpio.o usb_samdx.o
 OBJS		+= usb.o usb_control.o usb_standard.o uart.o printf.o ushell.o
+OBJS		+= adc.o
 
 OBJS += port.o
 
