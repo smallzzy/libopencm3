@@ -25,25 +25,6 @@
 #include <libopencm3/usb/usbd.h>
 #include "usb_private.h"
 
-static usbd_device *samd21_usbd_init(void);
-static void samd21_set_address(usbd_device *usbd_dev, uint8_t addr);
-static void samd21_ep_setup(usbd_device *usbd_dev, uint8_t addr,
-			       uint8_t type, uint16_t max_size,
-			       void (*callback) (usbd_device *usbd_dev,
-						 uint8_t ep));
-static void samd21_endpoints_reset(usbd_device *usbd_dev);
-static void samd21_ep_stall_set(usbd_device *usbd_dev, uint8_t addr,
-				   uint8_t stall);
-static uint8_t samd21_ep_stall_get(usbd_device *usbd_dev, uint8_t addr);
-static void samd21_ep_nak_set(usbd_device *usbd_dev, uint8_t addr,
-				 uint8_t nak);
-static uint16_t samd21_ep_write_packet(usbd_device *usbd_dev, uint8_t addr,
-					  const void *buf, uint16_t len);
-static uint16_t samd21_ep_read_packet(usbd_device *usbd_dev, uint8_t addr,
-					 void *buf, uint16_t len);
-static void samd21_poll(usbd_device *usbd_dev);
-static void samd21_disconnect(usbd_device *usbd_dev, bool disconnected);
-
 static uint8_t force_nak[8];
 static struct _usbd_device usbd_dev;
 
@@ -51,23 +32,13 @@ static struct samd21_usb_desc samd21_ep_desc[8][2];
 
 static uint8_t endpoint_ram[512];
 
-const struct _usbd_driver samd21_usb_driver = {
-	.init = samd21_usbd_init,
-	.set_address = samd21_set_address,
-	.ep_setup = samd21_ep_setup,
-	.ep_reset = samd21_endpoints_reset,
-	.ep_stall_set = samd21_ep_stall_set,
-	.ep_stall_get = samd21_ep_stall_get,
-	.ep_nak_set = samd21_ep_nak_set,
-	.ep_write_packet = samd21_ep_write_packet,
-	.ep_read_packet = samd21_ep_read_packet,
-	.poll = samd21_poll,
-	.disconnect = samd21_disconnect,
-};
+uint8_t tmp;
 
 /** Initialize the USB device controller hardware of the STM32. */
 static usbd_device *samd21_usbd_init(void)
 {
+	/* Clear Detach Bit */
+	INSERTBF(USB_CTRLB_DETACH, 0, USB->ctrlb);
 	/* Set to device mode */
 	INSERTBF(USB_CTRLA_MODE, 0, USB->ctrla);
 	/* Enable USB peripheral */
@@ -94,7 +65,7 @@ static void samd21_set_address(usbd_device *dev, uint8_t addr)
 
 static void
 samd21_ep_setup(usbd_device *dev, uint8_t addr, uint8_t type, uint16_t max_size,
-               void (*callback) (usbd_device *usbd_dev, uint8_t ep))
+               usbd_endpoint_callback callback)
 {
 	uint8_t dir = addr & 0x80;
 	addr &= 0x7f;
@@ -172,8 +143,9 @@ static void samd21_endpoints_reset(usbd_device *dev)
 static void samd21_ep_stall_set(usbd_device *dev, uint8_t addr, uint8_t stall)
 {
 	(void)dev;
+	uint8_t dir = addr & 0x80;
 
-	if ((addr & 0x80) || (addr == 0)) {
+	if (dir || (addr == 0)) {
 		addr &= 0x7F;
 
 		if (stall) {
@@ -184,7 +156,7 @@ static void samd21_ep_stall_set(usbd_device *dev, uint8_t addr, uint8_t stall)
 			                          BF(USB_EPSTATUS_DTGLIN, 1);
 		}
 	}
-	if ((addr & 0x80) == 0) {
+	if (dir == 0) {
 		if (stall) {
 			USB->ep[addr].statusset = BF(USB_EPSTATUS_STALLRQ0, 1);
 		} else {
@@ -324,3 +296,17 @@ static void samd21_disconnect(usbd_device *dev, bool disconnected)
 		INSERTBF(USB_CTRLB_DETACH, 0, USB->ctrlb);
 	}
 }
+
+const struct _usbd_driver samd21_usb_driver = {
+	.init = samd21_usbd_init,
+	.set_address = samd21_set_address,
+	.ep_setup = samd21_ep_setup,
+	.ep_reset = samd21_endpoints_reset,
+	.ep_stall_set = samd21_ep_stall_set,
+	.ep_stall_get = samd21_ep_stall_get,
+	.ep_nak_set = samd21_ep_nak_set,
+	.ep_write_packet = samd21_ep_write_packet,
+	.ep_read_packet = samd21_ep_read_packet,
+	.poll = samd21_poll,
+	.disconnect = samd21_disconnect,
+};
