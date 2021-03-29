@@ -203,11 +203,6 @@ struct samd21_sysctl {
 /* DFLL open loop mode configuration */
 #define CONF_CLOCK_DFLL_COARSE_VALUE            (0x1f / 4)
 #define CONF_CLOCK_DFLL_FINE_VALUE              (0xff / 4)
-#define NVMCTRL_OTP4                  		(0x00806020U)
-#define NVM_DFLL_COARSE_POS    			58
-#define NVM_DFLL_COARSE_SIZE   			6
-#define NVM_DFLL_FINE_POS      			64
-#define NVM_DFLL_FINE_SIZE     			10
 
 
 /* DFLLVAL - DFLL48M Value */
@@ -270,5 +265,7 @@ struct samd21_sysctl {
 #define SYSCTL_DPLLSTATUS_DIV						1 : 3
 
 #define SYSCTL	((volatile struct samd21_sysctl *)SAMD21_SYSCTL_BASE)
+
+void sysctrl_dfll_usb(void);
 
 #endif /* SAMDX_SYSCTL_H */

@@ -24,6 +24,7 @@
 #include <libopencm3/sam/d/bitfield.h>
 #include <libopencm3/sam/d/nvmctrl.h>
 #include <libopencm3/sam/d/pm.h>
+#include <libopencm3/sam/d/sysctl.h>
 
 /* For Writing Flash */ 
 #define NVM_MEM		((volatile uint16_t *)FLASH_ADDR)
@@ -276,4 +277,28 @@ uint32_t nvmctrl_get_rowsize(void)
 uint32_t nvmctrl_get_regionsize(void)
 {
 	return nvm_num_pages * 4;
+}
+
+uint32_t nvmctrl_get_dfll_otp(void) {
+    uint32_t coarse;
+	uint32_t fine;
+
+    coarse = (*((uint32_t *)(NVMCTRL_OTP4) + (NVM_DFLL_COARSE_POS / 32)) >>
+			(NVM_DFLL_COARSE_POS % 32)) &
+			((1 << NVM_DFLL_COARSE_SIZE) - 1);
+
+	if (coarse == 0x3f) {
+		coarse = 0x1f;
+	}
+
+	fine = (*((uint32_t *)(NVMCTRL_OTP4) + (NVM_DFLL_FINE_POS / 32)) >>
+			(NVM_DFLL_FINE_POS % 32)) &
+			((1 << NVM_DFLL_FINE_SIZE) - 1);
+
+	if (fine == 0x3ff) {
+		fine = 0x1ff;
+	}
+
+	return BF(SYSCTL_DFLLVAL_FINE, fine) |
+		  BF(SYSCTL_DFLLVAL_COARSE, coarse);
 }

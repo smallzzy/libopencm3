@@ -201,70 +201,6 @@ uint32_t get_periph_clk_speed(uint8_t peripheral)
 	return src_speed/div;
 }
 
-static void dfll_wait_for_sync(void)
-{
-	while (!GETBF(SYSCTL_PCLKSR_DFLLRDY, SYSCTL->pclksr));
-}
-
-void setup_dfll(void)
-{
-	uint32_t coarse;
-	uint32_t fine;
-
-	uint32_t dfllval;
-	uint32_t dfllmul;
-	uint32_t dfllctrl;
-
-	coarse = (*((uint32_t *)(NVMCTRL_OTP4) + (NVM_DFLL_COARSE_POS / 32)) >>
-			(NVM_DFLL_COARSE_POS % 32)) &
-			((1 << NVM_DFLL_COARSE_SIZE) - 1);
-
-	if (coarse == 0x3f) {
-		coarse = 0x1f;
-	}
-
-	fine = (*((uint32_t *)(NVMCTRL_OTP4) + (NVM_DFLL_FINE_POS / 32)) >>
-			(NVM_DFLL_FINE_POS % 32)) &
-			((1 << NVM_DFLL_FINE_SIZE) - 1);
-
-	if (fine == 0x3ff) {
-		fine = 0x1ff;
-	}
-
-	/* midpoints */
-	dfllval = BF(SYSCTL_DFLLVAL_FINE, fine) |
-		  BF(SYSCTL_DFLLVAL_COARSE, coarse);
-
-	dfllctrl = BF(SYSCTL_DFLLCTRL_LLAW, DFLLCTRL_LLAW_KEEP) |
-		   BF(SYSCTL_DFLLCTRL_STABLE, DFLLCTRL_STABLE_TRACK) |
-		   BF(SYSCTL_DFLLCTRL_QLDIS, DFLLCTRL_QLDIS_ENABLE) |
-		   BF(SYSCTL_DFLLCTRL_CCDIS, DFLLCTRL_CCDIS_DISABLE) |
-		   BF(SYSCTL_DFLLCTRL_MODE, DFLLCTRL_MODE_CLOSED) |
-		   BF(SYSCTL_DFLLCTRL_BPLCKC, DFLLCTRL_BPLCKC_DISABLE) |
-		   BF(SYSCTL_DFLLCTRL_USBCRM, DFLLCTRL_USBCRM_ENABLE) |
-		   BF(SYSCTL_DFLLCTRL_ENABLE, 1);
-
-	/* recovery mode */
-	dfllmul = BF(SYSCTL_DFLLMUL_MUL, DFLLMUL_MUL_DEFAULT);
-
-	/* errata_9905 */
-	{
-		/* disable ONDEMAND mode while writing configuration */
-		INSERTBF(SYSCTL_DFLLCTRL_ONDEMAND, 0, SYSCTL->dfllctrl);
-		dfll_wait_for_sync();
-
-		SYSCTL->dfllval = dfllval;
-		SYSCTL->dfllmul = dfllmul;
-
-		/* Write full configuration to DFLL control register */
-		SYSCTL->dfllctrl  = dfllctrl;
-		dfll_wait_for_sync();
-
-		/* disable ONDEMAND mode while writing configuration */
-		INSERTBF(SYSCTL_DFLLCTRL_ONDEMAND, 1, SYSCTL->dfllctrl);
-	}
-}
-
 static void errata(void)
 {
 	cm_enable_interrupts();
@@ -297,7 +233,7 @@ int gclk_init(struct gclk_hw *hw)
 	errata();
 
 	/* initialize 48Mhz clock */
-	setup_dfll();
+	sysctrl_dfll_usb();
 
 	/* initialize 32kHz clock */
 	setup_osc32k();

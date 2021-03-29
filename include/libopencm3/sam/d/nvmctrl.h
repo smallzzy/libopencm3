@@ -152,4 +152,12 @@ int nvmctrl_write_row(int addr, uint8_t *buffer);
 #define MAX_PAGE_SIZE			64
 #define MAX_ROW_SIZE			(MAX_PAGE_SIZE*4)
 
+#define NVMCTRL_OTP4                  		(0x00806020U)
+#define NVM_DFLL_COARSE_POS    			58
+#define NVM_DFLL_COARSE_SIZE   			6
+#define NVM_DFLL_FINE_POS      			64
+#define NVM_DFLL_FINE_SIZE     			10
+
+uint32_t nvmctrl_get_dfll_otp(void);
+
 #endif /* SAMDX_NVMCTRL_H */
