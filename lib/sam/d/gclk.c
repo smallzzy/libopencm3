@@ -43,28 +43,6 @@ static void _gclk_init(void)
 	while (GETBF(GCLK_CTRL_SWRST, GCLK->ctrl));
 }
 
-void set_gclk_source(uint8_t gclk_id, uint8_t source)
-{
-	cm_disable_interrupts();
-
-	while (GETBF(GCLK_STATUS_SYNCBUSY, GCLK->status));
-
-#ifdef DEBUG_CLOCK
-	GCLK->genctrl = BF(GCLK_GENCTRL_SRC, source) |
-			BF(GCLK_GENCTRL_ID, gclk_id) |
-			BF(GCLK_GENCTRL_GENEN, 1) |
-			BF(GCLK_GENCTRL_OE, 1);
-#else
-	GCLK->genctrl = BF(GCLK_GENCTRL_SRC, source) |
-			BF(GCLK_GENCTRL_ID, gclk_id) |
-			BF(GCLK_GENCTRL_GENEN, 1);
-#endif
-
-	while (GETBF(GCLK_STATUS_SYNCBUSY, GCLK->status));
-
-	cm_enable_interrupts();
-}
-
 uint8_t get_gclk_source(uint8_t gclk_id)
 {
 	cm_disable_interrupts();
@@ -151,19 +129,6 @@ static uint16_t get_gclk_div(uint8_t gclk_id)
 	return div;
 }
 
-void set_periph_clk(uint8_t gclk_id, uint8_t peripheral)
-{
-	cm_disable_interrupts();
-
-	/* set the peripheral first */
-	GCLK->clkctrl_id = BF(GCLK_CLKCTRL_ID, peripheral);
-
-	/* set the gclk id to the peripheral */
-	INSERTBF(GCLK_CLKCTRL_GEN, gclk_id, GCLK->clkctrl);
-
-	cm_enable_interrupts();
-}
-
 uint8_t get_periph_clk_gclk_id(uint8_t peripheral)
 {
 	cm_disable_interrupts();
@@ -174,36 +139,6 @@ uint8_t get_periph_clk_gclk_id(uint8_t peripheral)
 	cm_enable_interrupts();
 
 	return GETBF(GCLK_CLKCTRL_GEN,  GCLK->clkctrl);
-}
-
-void periph_clk_en(uint8_t peripheral, uint8_t enable)
-{
-	cm_disable_interrupts();
-
-	/* set the peripheral first */
-	GCLK->clkctrl_id = BF(GCLK_CLKCTRL_ID, peripheral);
-
-	/* enable the clock to that peripheral */
-	INSERTBF(GCLK_CLKCTRL_CLKEN, enable, GCLK->clkctrl);
-
-	cm_enable_interrupts();
-}
-
-void set_gclk_div(uint8_t gclk_id, uint16_t div)
-{
-	/* first write only the gclk_id */
-	uint8_t *gclk_id_p = (uint8_t *)&(GCLK->gendiv);
-
-	cm_disable_interrupts();
-
-	*gclk_id_p = gclk_id;
-
-	/* wait for chip */
-	while (GETBF(GCLK_STATUS_SYNCBUSY, GCLK->status));
-
-	INSERTBF(GCLK_GENDIV_DIV, div, GCLK->gendiv);
-
-	cm_enable_interrupts();
 }
 
 /* Mapping of clock source to Speed */
@@ -374,37 +309,14 @@ int gclk_init(struct gclk_hw *hw)
 	/* make sure global system clock peripheral is enable */
 	_gclk_init();
 
-	/* GCLK 1 */
-	set_gclk_source(GCLK1, hw->gclk1);
-	set_gclk_div(GCLK1, hw->gclk1_div);
-
-	/* GCLK 2 */
-	set_gclk_source(GCLK2, hw->gclk2);
-	set_gclk_div(GCLK2, hw->gclk2_div);
-
-	/* GCLK 3 */
-	set_gclk_source(GCLK3, hw->gclk3);
-	set_gclk_div(GCLK3, hw->gclk3_div);
-
-	/* GCLK 4 */
-	set_gclk_source(GCLK4, hw->gclk4);
-	set_gclk_div(GCLK4, hw->gclk4_div);
-
-	/* GCLK 5 */
-	set_gclk_source(GCLK5, hw->gclk5);
-	set_gclk_div(GCLK5, hw->gclk5_div);
-
-	/* GCLK 6 */
-	set_gclk_source(GCLK6, hw->gclk6);
-	set_gclk_div(GCLK6, hw->gclk6_div);
-
-	/* GCLK 7 */
-	set_gclk_source(GCLK7, hw->gclk7);
-	set_gclk_div(GCLK7, hw->gclk7_div);
-
-	/* Now set the main clock */
-	set_gclk_source(GCLK0, hw->gclk0);
-	set_gclk_div(GCLK0, hw->gclk0_div);
+	gclk_set_gen(GCLK1, hw->gclk1, hw->gclk1_div, GCLK_MODE_GENEN);	
+	gclk_set_gen(GCLK2, hw->gclk2, hw->gclk2_div, GCLK_MODE_GENEN);
+	gclk_set_gen(GCLK3, hw->gclk3, hw->gclk3_div, GCLK_MODE_GENEN);
+	gclk_set_gen(GCLK4, hw->gclk4, hw->gclk4_div, GCLK_MODE_GENEN);
+	gclk_set_gen(GCLK5, hw->gclk5, hw->gclk5_div, GCLK_MODE_GENEN);
+	gclk_set_gen(GCLK6, hw->gclk6, hw->gclk6_div, GCLK_MODE_GENEN);
+	gclk_set_gen(GCLK7, hw->gclk7, hw->gclk7_div, GCLK_MODE_GENEN);
+	gclk_set_gen(GCLK0, hw->gclk0, hw->gclk0_div, GCLK_MODE_GENEN);
 
 	return 0;
 }

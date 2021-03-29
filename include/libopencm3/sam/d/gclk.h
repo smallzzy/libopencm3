@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <libopencm3/sam/d/bitfield.h>
+#include <libopencm3/sam/d/gclk_new.h>
 
 #define SAMD21_GCLK_BASE			0x40000C00
 
@@ -224,28 +225,6 @@ void set_gclk_source(uint8_t gclk_id, uint8_t source);
  * @return      None.
  */
 void set_gclk_div(uint8_t gclk_id, uint16_t div);
-
-/**
- * set_periph_clk() Will connect a global clock to a peripheral and enable
- * that global clock. The peripheral must be enabled independently of this
- * clock.
- *
- * @param  	gclk_id    - global clock id
- * @param  	peripheral - peripheral
- *
- * @return      None.
- */
-void set_periph_clk(uint8_t gclk_id, uint8_t peripheral);
-
-/**
- * periph_clk_en() Enable the peripheral clock.
- *
- * @param  	peripheral - the peripheral to enable
- * @param  	enable	   - 1:Enable 0:Disable
- *
- * @return      None.
- */
-void periph_clk_en(uint8_t peripheral, uint8_t enable);
 
 /**
  * setup_dfll() Sets up the 48Mhz clock in open loop mode. Needed for USB
